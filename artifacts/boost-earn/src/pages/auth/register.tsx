@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useRegister } from "@workspace/api-client-react";
 import { useAuthStore } from "@/lib/auth-store";
@@ -12,6 +12,14 @@ export default function Register() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [referralCode, setReferralCode] = useState("");
+  
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const refCode = params.get("ref");
+    if (refCode) {
+      setReferralCode(refCode);
+    }
+  }, []);
   
   const { mutate: register, isPending } = useRegister();
   const { setAuth } = useAuthStore();

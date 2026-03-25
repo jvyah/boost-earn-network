@@ -10,7 +10,7 @@ import { fr } from "date-fns/locale";
 
 const REJECTION_REASONS = [
   'Capture non conforme (floue ou rognée)',
-  'Action incomplète, vous devez effectuer toutes les actions demandé avant de soumettre',
+  'Action incomplète (Like ou Follow manquant)',
   'Preuve déjà utilisée par un autre compte',
   'Compte social ne correspond pas au profil',
   'Paiement non reçu (Vérifiez votre ID de transaction)',
