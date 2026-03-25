@@ -1,0 +1,17 @@
+{
+  "name": "Boost & Earn",
+  "short_name": "Boost&Earn",
+  "description": "Plateforme de visibilité digitale et revenus",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#1D4ED8",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+packages:
+  "framer-motion": "For page transitions, drawer animations, and premium micro-interactions"
+  "date-fns": "For formatting dates cleanly in the UI"
+  "lucide-react": "Base icon set"
+  "clsx": "Class merging"
+  "tailwind-merge": "Class merging for components"
+  "zustand": "Lightweight global state management for auth and user session"
+
+images:
+  - path: "artifacts/boost-earn/public/images/auth-bg.png"
+    description: "Abstract deep dark blue and rich purple neon gradient mesh, high quality, ultra professional tech background, dark mode"
+    aspect_ratio: "16:9"
+
+notes:
+  - The OpenAPI spec for submissions and deposits did not include file properties for multipart/form-data. Custom fetch hooks are implemented for these to handle FormData correctly.
+  - Global fetch interceptor added to automatically attach the JWT token to all generated orval API calls.

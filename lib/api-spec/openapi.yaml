@@ -1,22 +1,34 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Boost & Earn API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: users
+    description: User management
+  - name: tasks
+    description: Tasks
+  - name: submissions
+    description: Task submissions
+  - name: withdrawals
+    description: Withdrawal requests
+  - name: notifications
+    description: Notifications
+  - name: admin
+    description: Admin operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,7 +36,595 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /tasks:
+    get:
+      operationId: getTasks
+      tags: [tasks]
+      summary: Get all active tasks
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: platform
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      summary: Create a new task (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTaskInput"
+      responses:
+        "201":
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+  /tasks/{taskId}:
+    get:
+      operationId: getTask
+      tags: [tasks]
+      summary: Get task by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    put:
+      operationId: updateTask
+      tags: [tasks]
+      summary: Update task (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTaskInput"
+      responses:
+        "200":
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+    delete:
+      operationId: deleteTask
+      tags: [tasks]
+      summary: Delete task (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Task deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /tasks/platform-counts:
+    get:
+      operationId: getPlatformCounts
+      tags: [tasks]
+      summary: Get task counts per platform
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Platform task counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformCounts"
+  /submissions:
+    get:
+      operationId: getSubmissions
+      tags: [submissions]
+      summary: Get user submissions
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Submission"
+    post:
+      operationId: createSubmission
+      tags: [submissions]
+      summary: Submit task proof
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateSubmissionInput"
+      responses:
+        "201":
+          description: Submission created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+  /submissions/admin:
+    get:
+      operationId: getAdminSubmissions
+      tags: [submissions]
+      summary: Get all submissions for admin review
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of all submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Submission"
+  /submissions/{submissionId}/approve:
+    post:
+      operationId: approveSubmission
+      tags: [submissions]
+      summary: Approve a submission
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: submissionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Submission approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /submissions/{submissionId}/reject:
+    post:
+      operationId: rejectSubmission
+      tags: [submissions]
+      summary: Reject a submission
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: submissionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectInput"
+      responses:
+        "200":
+          description: Submission rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /withdrawals:
+    get:
+      operationId: getWithdrawals
+      tags: [withdrawals]
+      summary: Get user withdrawals
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of withdrawals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Withdrawal"
+    post:
+      operationId: createWithdrawal
+      tags: [withdrawals]
+      summary: Request a withdrawal
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWithdrawalInput"
+      responses:
+        "201":
+          description: Withdrawal created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Withdrawal"
+  /withdrawals/admin:
+    get:
+      operationId: getAdminWithdrawals
+      tags: [withdrawals]
+      summary: Get all withdrawals for admin
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All withdrawals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Withdrawal"
+  /withdrawals/{withdrawalId}/approve:
+    post:
+      operationId: approveWithdrawal
+      tags: [withdrawals]
+      summary: Approve withdrawal
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: withdrawalId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Withdrawal approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /withdrawals/{withdrawalId}/reject:
+    post:
+      operationId: rejectWithdrawal
+      tags: [withdrawals]
+      summary: Reject withdrawal
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: withdrawalId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectInput"
+      responses:
+        "200":
+          description: Withdrawal rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /notifications:
+    get:
+      operationId: getNotifications
+      tags: [notifications]
+      summary: Get user notifications
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Notifications list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All notifications marked read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /admin/users:
+    get:
+      operationId: getAdminUsers
+      tags: [admin]
+      summary: Get all users (admin)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+  /admin/users/{userId}/balance:
+    post:
+      operationId: adjustUserBalance
+      tags: [admin]
+      summary: Adjust user balance
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjustBalanceInput"
+      responses:
+        "200":
+          description: Balance adjusted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /admin/users/{userId}/suspend:
+    post:
+      operationId: toggleUserSuspension
+      tags: [admin]
+      summary: Suspend or unsuspend user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Suspension toggled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /admin/users/{userId}/reset-password:
+    post:
+      operationId: resetUserPassword
+      tags: [admin]
+      summary: Reset user password
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordInput"
+      responses:
+        "200":
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /deposits:
+    get:
+      operationId: getDeposits
+      tags: [admin]
+      summary: Get all deposits (announcer submissions)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: All deposits
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Deposit"
+    post:
+      operationId: createDeposit
+      tags: [admin]
+      summary: Submit a deposit (announcer)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CreateDepositInput"
+      responses:
+        "201":
+          description: Deposit created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deposit"
+  /deposits/{depositId}/approve:
+    post:
+      operationId: approveDeposit
+      tags: [admin]
+      summary: Approve deposit and publish task
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: depositId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApproveDepositInput"
+      responses:
+        "200":
+          description: Deposit approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /referrals/link:
+    get:
+      operationId: getReferralLink
+      tags: [users]
+      summary: Get user referral link
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Referral link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReferralInfo"
+  /referrals/team:
+    get:
+      operationId: getTeam
+      tags: [users]
+      summary: Get user's referral team
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Team members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamMember"
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +633,407 @@ components:
           type: string
       required:
         - status
-
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+    RegisterInput:
+      type: object
+      properties:
+        fullName:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+        referralCode:
+          type: string
+      required:
+        - fullName
+        - phone
+        - password
+    LoginInput:
+      type: object
+      properties:
+        phone:
+          type: string
+        password:
+          type: string
+      required:
+        - phone
+        - password
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required:
+        - token
+        - user
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        phone:
+          type: string
+        balance:
+          type: number
+        referralCode:
+          type: string
+        isAdmin:
+          type: boolean
+        isSuspended:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - fullName
+        - phone
+        - balance
+        - referralCode
+        - isAdmin
+        - isSuspended
+        - createdAt
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        phone:
+          type: string
+        balance:
+          type: number
+        referralCode:
+          type: string
+        isAdmin:
+          type: boolean
+        isSuspended:
+          type: boolean
+        teamCount:
+          type: integer
+        createdAt:
+          type: string
+      required:
+        - id
+        - fullName
+        - phone
+        - balance
+        - referralCode
+        - isAdmin
+        - isSuspended
+        - teamCount
+        - createdAt
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+        link:
+          type: string
+        platform:
+          type: string
+        taskName:
+          type: string
+        durationDays:
+          type: integer
+        expiresAt:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - link
+        - platform
+        - taskName
+        - durationDays
+        - expiresAt
+        - isActive
+        - createdAt
+    CreateTaskInput:
+      type: object
+      properties:
+        link:
+          type: string
+        platform:
+          type: string
+        taskName:
+          type: string
+        durationDays:
+          type: integer
+      required:
+        - link
+        - platform
+        - taskName
+        - durationDays
+    UpdateTaskInput:
+      type: object
+      properties:
+        link:
+          type: string
+        platform:
+          type: string
+        taskName:
+          type: string
+        durationDays:
+          type: integer
+        isActive:
+          type: boolean
+    PlatformCounts:
+      type: object
+      properties:
+        tiktok:
+          type: integer
+        facebook:
+          type: integer
+        youtube:
+          type: integer
+        instagram:
+          type: integer
+      required:
+        - tiktok
+        - facebook
+        - youtube
+        - instagram
+    Submission:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        taskId:
+          type: integer
+        imageUrls:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        rejectionReason:
+          type: string
+        userName:
+          type: string
+        taskName:
+          type: string
+        platform:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - taskId
+        - imageUrls
+        - status
+        - createdAt
+    CreateSubmissionInput:
+      type: object
+      properties:
+        taskId:
+          type: integer
+      required:
+        - taskId
+    RejectInput:
+      type: object
+      properties:
+        reason:
+          type: string
+      required:
+        - reason
+    Withdrawal:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        amount:
+          type: number
+        phone:
+          type: string
+        name:
+          type: string
+        operator:
+          type: string
+        status:
+          type: string
+        userName:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - amount
+        - phone
+        - name
+        - operator
+        - status
+        - createdAt
+    CreateWithdrawalInput:
+      type: object
+      properties:
+        amount:
+          type: number
+        phone:
+          type: string
+        name:
+          type: string
+        operator:
+          type: string
+      required:
+        - amount
+        - phone
+        - name
+        - operator
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        message:
+          type: string
+        type:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - message
+        - type
+        - isRead
+        - createdAt
+    AdjustBalanceInput:
+      type: object
+      properties:
+        amount:
+          type: number
+        operation:
+          type: string
+          enum: [add, subtract]
+      required:
+        - amount
+        - operation
+    ResetPasswordInput:
+      type: object
+      properties:
+        newPassword:
+          type: string
+      required:
+        - newPassword
+    Deposit:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        link:
+          type: string
+        platform:
+          type: string
+        taskType:
+          type: string
+        durationDays:
+          type: integer
+        paymentProofUrl:
+          type: string
+        status:
+          type: string
+        userName:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - link
+        - platform
+        - taskType
+        - durationDays
+        - paymentProofUrl
+        - status
+        - createdAt
+    CreateDepositInput:
+      type: object
+      properties:
+        link:
+          type: string
+        platform:
+          type: string
+        taskType:
+          type: string
+        durationDays:
+          type: integer
+      required:
+        - link
+        - platform
+        - taskType
+        - durationDays
+    ApproveDepositInput:
+      type: object
+      properties:
+        taskName:
+          type: string
+        durationDays:
+          type: integer
+      required:
+        - taskName
+        - durationDays
+    ReferralInfo:
+      type: object
+      properties:
+        referralCode:
+          type: string
+        referralLink:
+          type: string
+        totalReferrals:
+          type: integer
+      required:
+        - referralCode
+        - referralLink
+        - totalReferrals
+    TeamMember:
+      type: object
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        phone:
+          type: string
+        balance:
+          type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - fullName
+        - phone
+        - balance
+        - createdAt

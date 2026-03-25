@@ -1,8 +1,8 @@
-# Workspace
+# Workspace — Boost & Earn
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+**Boost & Earn** is a digital visibility + earnings platform for Congo (DRC) users. Users complete social media engagement tasks (TikTok, Facebook, YouTube, Instagram) and earn 200 CDF per validated task. Advertisers can submit campaigns, and an admin panel manages the full workflow.
 
 ## Stack
 
@@ -10,87 +10,102 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
-- **API framework**: Express 5
+- **Frontend**: React + Vite (artifacts/boost-earn), hosted at `/`
+- **API framework**: Express 5 (artifacts/api-server), hosted at `/api`
 - **Database**: PostgreSQL + Drizzle ORM
+- **Auth**: JWT (bcrypt + jsonwebtoken)
+- **File uploads**: Multer (images saved to `artifacts/api-server/uploads/`)
 - **Validation**: Zod (`zod/v4`), `drizzle-zod`
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
+- **PWA**: manifest.json + service worker at `public/sw.js`
+
+## Admin Account
+
+- **Phone**: 0980687851
+- **Password**: admin
 
 ## Structure
 
 ```text
 artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
+├── artifacts/
+│   ├── api-server/         # Express API server
+│   │   ├── src/routes/     # auth, tasks, submissions, withdrawals, notifications, deposits, admin, referrals
+│   │   ├── src/lib/auth.ts # JWT auth helpers
+│   │   └── uploads/        # User-uploaded files (submissions, payment proofs)
+│   └── boost-earn/         # React + Vite frontend
+│       ├── src/pages/      # auth/login, auth/register, home, tasks, submit, team, profile
+│       ├── src/pages/admin/# admin-layout, users, validate-tasks, deposits, withdrawals, add-task
+│       ├── src/components/ # image-uploader, task-card, platform-icon, layout/
+│       ├── src/lib/        # auth-store (zustand), fetch-interceptor
+│       ├── public/         # logo.png, manifest.json, sw.js
+│       └── index.html      # PWA-enabled
+├── lib/
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
 │   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+│   └── db/
+│       └── schema/         # users, tasks, submissions, withdrawals, notifications, deposits
+└── scripts/
 ```
 
-## TypeScript & Composite Projects
+## Features
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
+### User Features
+- Registration with referral code support
+- Login with JWT token (stored in localStorage)
+- Home: 4 platform cards (TikTok, Facebook, YouTube, Instagram) with task counts
+- Tasks: list all active tasks with time remaining, upload screenshots, submit
+- Submit: advertiser form to submit campaign + payment proof
+- Team: referral link + team list
+- Profile: balance display, withdrawal request, WhatsApp support links
+- Notifications: bell icon with unread count, mark all read
+- PWA: installable on mobile and desktop
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+### Admin Features (phone: 0980687851, password: admin)
+- **Users**: view all users with team count, add/subtract balance, suspend/unsuspend, reset password
+- **Validate Tasks**: ordered by submission date, grouped by user, all images per submission visible and zoomable, approve (→ +200 CDF + notification) / reject (with mandatory reason + notification)
+- **Deposits**: view payment proofs (zoomable), approve to create/publish task
+- **Withdrawals**: approve/reject withdrawal requests
+- **Add Task**: manually add tasks with link, platform, task name, duration
 
-## Root Scripts
+### Business Rules
+- 1 validated task = 200 CDF
+- Minimum withdrawal: 6000 CDF (24-72h processing, Mon-Sat)
+- Task duration: auto-expires after set days
+- External links open in native apps (target="_blank")
+- Images only accepted in all upload fields
 
-- `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
-- `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
+## API Endpoints
 
-## Packages
+- `POST /api/auth/register` — Register new user
+- `POST /api/auth/login` — Login
+- `GET /api/auth/me` — Get current user
+- `GET /api/tasks` — List active tasks
+- `GET /api/tasks/platform-counts` — Platform task counts
+- `POST /api/tasks` — Create task (admin)
+- `POST /api/submissions` — Submit task proof (multipart)
+- `GET /api/submissions/admin` — All submissions (admin)
+- `POST /api/submissions/:id/approve` — Approve submission
+- `POST /api/submissions/:id/reject` — Reject submission
+- `POST /api/withdrawals` — Request withdrawal
+- `GET /api/withdrawals/admin` — All withdrawals (admin)
+- `POST /api/withdrawals/:id/approve` — Approve withdrawal
+- `POST /api/deposits` — Submit advertiser campaign (multipart)
+- `GET /api/deposits` — All deposits (admin)
+- `POST /api/deposits/:id/approve` — Approve deposit → publish task
+- `GET /api/notifications` — User notifications
+- `POST /api/notifications/read-all` — Mark all read
+- `GET /api/admin/users` — All users (admin)
+- `POST /api/admin/users/:id/balance` — Adjust balance (admin)
+- `POST /api/admin/users/:id/suspend` — Toggle suspension (admin)
+- `POST /api/admin/users/:id/reset-password` — Reset password (admin)
+- `GET /api/referrals/link` — Get referral info
+- `GET /api/referrals/team` — Get team members
 
-### `artifacts/api-server` (`@workspace/api-server`)
-
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request and response validation and `@workspace/db` for persistence.
-
-- Entry: `src/index.ts` — reads `PORT`, starts Express
-- App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
-
-### `lib/db` (`@workspace/db`)
-
-Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
-
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
-
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
-
-### `lib/api-spec` (`@workspace/api-spec`)
-
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
-
-### `scripts` (`@workspace/scripts`)
-
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+## Payment Info (for advertisers)
+- Airtel Money: 0980687851
+- M-Pesa: 0835836829
+- Orange Money: 0845691564
+- Nom: Jonas Mbusa
