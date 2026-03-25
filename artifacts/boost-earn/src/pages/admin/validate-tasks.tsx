@@ -2,11 +2,19 @@ import { useState } from "react";
 import { useGetAdminSubmissions, useApproveSubmission, useRejectSubmission } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, ZoomIn, X as XIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+
+const REJECTION_REASONS = [
+  'Capture non conforme (floue ou rognée)',
+  'Action incomplète, vous devez effectuer toutes les actions demandé avant de soumettre',
+  'Preuve déjà utilisée par un autre compte',
+  'Compte social ne correspond pas au profil',
+  'Paiement non reçu (Vérifiez votre ID de transaction)',
+];
 
 export default function AdminValidateTasks() {
   const { data: submissions, refetch } = useGetAdminSubmissions();
@@ -16,6 +24,7 @@ export default function AdminValidateTasks() {
   
   const [rejectReason, setRejectReason] = useState("");
   const [activeRejectId, setActiveRejectId] = useState<number | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   // Filter only pending submissions and group by user
   const pending = submissions?.filter(s => s.status === 'pending') || [];
@@ -30,7 +39,7 @@ export default function AdminValidateTasks() {
   const handleApprove = (id: number) => {
     approve({ submissionId: id }, {
       onSuccess: () => {
-        toast({ title: "Approuvé", description: "+200 CDF crédités" });
+        toast({ title: "Approuvé", description: "+250 CDF crédités" });
         refetch();
       }
     });
@@ -68,9 +77,14 @@ export default function AdminValidateTasks() {
 
                 <div className="flex gap-2 overflow-x-auto pb-2 mb-4 snap-x">
                   {sub.imageUrls.map((url: string, idx: number) => (
-                    <a key={idx} href={url} target="_blank" rel="noreferrer" className="shrink-0 snap-center">
-                      <img src={url} alt={`Proof ${idx}`} className="w-32 h-56 object-cover rounded-xl border border-white/10 hover:border-primary transition-colors" />
-                    </a>
+                    <button key={idx} onClick={() => setZoomedImage(url)} className="shrink-0 snap-center hover:opacity-80 transition">
+                      <div className="relative">
+                        <img src={url} alt={`Proof ${idx}`} className="w-32 h-56 object-cover rounded-xl border border-white/10" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/40 rounded-xl transition">
+                          <ZoomIn className="w-6 h-6 text-white opacity-0 hover:opacity-100" />
+                        </div>
+                      </div>
+                    </button>
                   ))}
                 </div>
 
@@ -87,10 +101,19 @@ export default function AdminValidateTasks() {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Raison du rejet</DialogTitle>
+                        <DialogTitle>Motif du rejet</DialogTitle>
                       </DialogHeader>
                       <form onSubmit={handleReject} className="space-y-4">
-                        <Input required placeholder="Ex: Capture non lisible, action non effectuée" value={rejectReason} onChange={e => setRejectReason(e.target.value)} />
+                        <Select required value={rejectReason} onValueChange={setRejectReason}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner un motif..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {REJECTION_REASONS.map(reason => (
+                              <SelectItem key={reason} value={reason}>{reason}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <Button type="submit" variant="destructive" className="w-full">Confirmer le rejet</Button>
                       </form>
                     </DialogContent>
@@ -104,6 +127,18 @@ export default function AdminValidateTasks() {
       
       {pending.length === 0 && (
         <div className="text-center text-muted-foreground py-10">Aucune tâche en attente.</div>
+      )}
+
+      {/* Image Zoom Modal */}
+      {zoomedImage && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}>
+          <div className="relative max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setZoomedImage(null)} className="absolute -top-10 right-0 text-white hover:text-gray-300">
+              <XIcon className="w-6 h-6" />
+            </button>
+            <img src={zoomedImage} alt="Zoomed" className="w-full h-auto rounded-lg max-h-[80vh] object-contain" />
+          </div>
+        </div>
       )}
     </div>
   );

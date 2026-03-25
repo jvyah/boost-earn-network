@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { tasksTable } from "@workspace/db";
+import { tasksTable, submissionsTable } from "@workspace/db";
 import { eq, and, gt, sql } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "../lib/auth.js";
 
@@ -21,6 +21,7 @@ router.get("/platform-counts", requireAuth, async (req, res) => {
 });
 
 router.get("/", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as number;
   const now = new Date();
   const platform = req.query["platform"] as string | undefined;
 
@@ -29,7 +30,16 @@ router.get("/", requireAuth, async (req, res) => {
     conditions = and(conditions, eq(tasksTable.platform, platform.toLowerCase()));
   }
 
-  const tasks = await db.select().from(tasksTable).where(conditions).orderBy(tasksTable.createdAt);
+  const allTasks = await db.select().from(tasksTable).where(conditions).orderBy(tasksTable.createdAt);
+  
+  // Filter out tasks already submitted by this user
+  const submittedTaskIds = (await db.select({ taskId: submissionsTable.taskId })
+    .from(submissionsTable)
+    .where(eq(submissionsTable.userId, userId)))
+    .map(s => s.taskId);
+
+  const tasks = allTasks.filter(t => !submittedTaskIds.includes(t.id));
+
   res.json(tasks.map(t => ({
     id: t.id,
     link: t.link,

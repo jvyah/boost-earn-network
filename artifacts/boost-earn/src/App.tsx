@@ -15,6 +15,7 @@ import Tasks from "@/pages/tasks";
 import Submit from "@/pages/submit";
 import Team from "@/pages/team";
 import Profile from "@/pages/profile";
+import Notifications from "@/pages/notifications";
 import AdminLayout from "@/pages/admin/admin-layout";
 import NotFound from "@/pages/not-found";
 
@@ -45,6 +46,7 @@ function ProtectedRouter() {
             <Route path="/submit" component={Submit} />
             <Route path="/team" component={Team} />
             <Route path="/profile" component={Profile} />
+            <Route path="/notifications" component={Notifications} />
             <Route path="/admin" component={AdminLayout} />
             <Route component={NotFound} />
           </Switch>
