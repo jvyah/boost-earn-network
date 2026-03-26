@@ -3,10 +3,14 @@ import { useGetAdminUsers, useAdjustUserBalance, useToggleUserSuspension } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ShieldAlert, ShieldCheck, Plus, Minus } from "lucide-react";
+import { ShieldAlert, ShieldCheck, Plus, Minus, History } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-export default function AdminUsers() {
+interface Props {
+  onViewHistory?: (userId: number, userName: string) => void;
+}
+
+export default function AdminUsers({ onViewHistory }: Props) {
   const { data: users, refetch } = useGetAdminUsers();
   const { mutate: adjustBalance } = useAdjustUserBalance();
   const { mutate: toggleSuspension } = useToggleUserSuspension();
@@ -56,6 +60,11 @@ export default function AdminUsers() {
           </div>
 
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            {onViewHistory && (
+              <Button size="sm" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10" onClick={() => onViewHistory(user.id, user.fullName)}>
+                <History className="w-4 h-4 mr-1" /> Historique
+              </Button>
+            )}
             <Dialog open={selectedUser?.id === user.id} onOpenChange={(open) => !open && setSelectedUser(null)}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="secondary" onClick={() => setSelectedUser(user)}>

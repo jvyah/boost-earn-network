@@ -7,13 +7,22 @@ import { requireAuth, requireAdmin } from "../lib/auth.js";
 const router = Router();
 
 router.get("/platform-counts", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as number;
   const now = new Date();
-  const tasks = await db.select({
+  const allTasks = await db.select({
+    id: tasksTable.id,
     platform: tasksTable.platform,
   }).from(tasksTable).where(and(eq(tasksTable.isActive, true), gt(tasksTable.expiresAt, now)));
 
+  // Filter out tasks already submitted by this user
+  const submittedTaskIds = (await db.select({ taskId: submissionsTable.taskId })
+    .from(submissionsTable)
+    .where(eq(submissionsTable.userId, userId)))
+    .map(s => s.taskId);
+
   const counts = { tiktok: 0, facebook: 0, youtube: 0, instagram: 0 };
-  for (const task of tasks) {
+  for (const task of allTasks) {
+    if (submittedTaskIds.includes(task.id)) continue;
     const p = task.platform.toLowerCase() as keyof typeof counts;
     if (p in counts) counts[p]++;
   }

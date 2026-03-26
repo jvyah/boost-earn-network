@@ -123,13 +123,13 @@ router.post("/:submissionId/approve", requireAdmin, async (req, res) => {
 
   await db.update(submissionsTable).set({ status: "approved", updatedAt: new Date() }).where(eq(submissionsTable.id, id));
   await db.update(usersTable).set({
-    balance: sql`${usersTable.balance} + 250`,
+    balance: sql`${usersTable.balance} + 200`,
     updatedAt: new Date(),
   }).where(eq(usersTable.id, sub.userId));
 
   await db.insert(notificationsTable).values({
     userId: sub.userId,
-    message: "Félicitations ! Votre tâche a été validée avec succès. +250 CDF ajoutés à votre solde.",
+    message: "Félicitations ! Votre tâche a été validée. +200 CDF ajoutés.",
     type: "success",
     isRead: false,
   });

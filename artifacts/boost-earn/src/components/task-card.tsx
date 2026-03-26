@@ -15,22 +15,7 @@ export function TaskCard({ task }: { task: Task }) {
   const { toast } = useToast();
 
   const handleOpenLink = () => {
-    const platformMap: Record<string, { intent: string, fallback: string }> = {
-      tiktok: { intent: 'intent://vt.tiktok.com/ZS', fallback: task.link },
-      facebook: { intent: 'fb://page/', fallback: task.link },
-      youtube: { intent: 'vnd.youtube://', fallback: task.link },
-      instagram: { intent: 'instagram://user/', fallback: task.link },
-    };
-    
-    // Try deep link first, fallback to web
-    const platform = task.platform.toLowerCase();
-    if (navigator.userAgent.includes('Android') && platform in platformMap) {
-      const { intent } = platformMap[platform];
-      window.location.href = intent + task.link;
-      setTimeout(() => window.open(task.link, '_blank', 'noopener,noreferrer'), 1500);
-    } else {
-      window.open(task.link, '_blank', 'noopener,noreferrer');
-    }
+    window.open(task.link, '_blank', 'noopener,noreferrer');
   };
 
   const handleSubmit = () => {

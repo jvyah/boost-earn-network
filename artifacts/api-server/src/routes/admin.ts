@@ -1,7 +1,7 @@
 import { Router } from "express";
 import bcrypt from "bcrypt";
 import { db } from "@workspace/db";
-import { usersTable } from "@workspace/db";
+import { usersTable, submissionsTable, tasksTable, depositsTable, withdrawalsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { requireAdmin } from "../lib/auth.js";
 
@@ -100,4 +100,56 @@ router.post("/users/:userId/reset-password", requireAdmin, async (req, res) => {
   res.json({ message: "Mot de passe réinitialisé" });
 });
 
+// GET submissions history for a specific user (admin)
+router.get("/users/:userId/submissions", requireAdmin, async (req, res) => {
+  const userId = Number(req.params["userId"]);
+  const subs = await db.select({
+    id: submissionsTable.id,
+    taskId: submissionsTable.taskId,
+    imageUrls: submissionsTable.imageUrls,
+    status: submissionsTable.status,
+    rejectionReason: submissionsTable.rejectionReason,
+    createdAt: submissionsTable.createdAt,
+    taskName: tasksTable.taskName,
+    platform: tasksTable.platform,
+  })
+    .from(submissionsTable)
+    .leftJoin(tasksTable, eq(submissionsTable.taskId, tasksTable.id))
+    .where(eq(submissionsTable.userId, userId))
+    .orderBy(submissionsTable.createdAt);
+
+  res.json(subs.map(s => ({ ...s, createdAt: s.createdAt.toISOString() })));
+});
+
+// GET transactions (deposits + withdrawals) for a specific user (admin)
+router.get("/users/:userId/transactions", requireAdmin, async (req, res) => {
+  const userId = Number(req.params["userId"]);
+
+  const deps = await db.select().from(depositsTable).where(eq(depositsTable.userId, userId));
+  const withs = await db.select().from(withdrawalsTable).where(eq(withdrawalsTable.userId, userId));
+
+  const deposits = deps.map(d => ({
+    id: d.id,
+    type: "deposit" as const,
+    amount: null,
+    platform: d.platform,
+    status: d.status,
+    note: `${d.taskType} - ${d.durationDays}j`,
+    createdAt: d.createdAt.toISOString(),
+  }));
+
+  const withdrawals = withs.map(w => ({
+    id: w.id,
+    type: "withdrawal" as const,
+    amount: Number(w.amount),
+    platform: w.operator,
+    status: w.status,
+    note: w.phone,
+    createdAt: w.createdAt.toISOString(),
+  }));
+
+  res.json([...deposits, ...withdrawals].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+});
+
 export default router;
+

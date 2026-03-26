@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { notificationsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { requireAuth } from "../lib/auth.js";
 
 const router = Router();
@@ -24,6 +24,21 @@ router.post("/read-all", requireAuth, async (req, res) => {
     .set({ isRead: true })
     .where(eq(notificationsTable.userId, userId));
   res.json({ message: "Toutes les notifications ont été lues" });
+});
+
+router.delete("/all", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as number;
+  await db.delete(notificationsTable).where(eq(notificationsTable.userId, userId));
+  res.json({ message: "Toutes les notifications supprimées" });
+});
+
+router.delete("/:notifId", requireAuth, async (req, res) => {
+  const userId = (req as any).userId as number;
+  const notifId = Number(req.params["notifId"]);
+  await db.delete(notificationsTable).where(
+    and(eq(notificationsTable.id, notifId), eq(notificationsTable.userId, userId))
+  );
+  res.json({ message: "Notification supprimée" });
 });
 
 export default router;

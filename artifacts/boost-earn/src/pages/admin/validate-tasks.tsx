@@ -39,7 +39,7 @@ export default function AdminValidateTasks() {
   const handleApprove = (id: number) => {
     approve({ submissionId: id }, {
       onSuccess: () => {
-        toast({ title: "Approuvé", description: "+250 CDF crédités" });
+        toast({ title: "✅ Approuvé", description: "+200 CDF crédités à l'utilisateur" });
         refetch();
       }
     });
