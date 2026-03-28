@@ -15,7 +15,20 @@ export function TaskCard({ task }: { task: Task }) {
   const { toast } = useToast();
 
   const handleOpenLink = () => {
-    window.open(task.link, '_blank', 'noopener,noreferrer');
+    const platform = task.platform?.toLowerCase();
+    
+    // Facebook: Use native protocol for better app detection
+    if (platform === 'facebook' && task.link.includes('facebook.com')) {
+      const fbUrl = task.link.replace(/^https?:\/\/(www\.)?facebook\.com/, '');
+      window.open(`fb://facewebmodal/f?href=${encodeURIComponent(task.link)}`, '_blank');
+      // Fallback to web version after short delay
+      setTimeout(() => {
+        if (document.hidden === false) window.open(task.link, '_blank', 'noopener,noreferrer');
+      }, 1500);
+    } else {
+      // Standard web open for all other platforms
+      window.open(task.link, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const handleSubmit = () => {

@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { useGetAdminSubmissions, useGetAdminUsers } from "@workspace/api-client-react";
-import { ArrowLeft, CheckCircle, Clock, XCircle, Banknote, Landmark } from "lucide-react";
+import { ArrowLeft, CheckCircle, Clock, XCircle, Banknote, Landmark, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -15,9 +18,12 @@ type Tab = "approved" | "pending" | "rejected" | "transactions";
 
 export default function AdminUserHistory({ userId, userName, onBack }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>("approved");
-  const { data: allSubmissions, isLoading: loadingSubs } = useGetAdminSubmissions();
+  const { data: allSubmissions, isLoading: loadingSubs, refetch } = useGetAdminSubmissions();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loadingTx, setLoadingTx] = useState(false);
+  const [resettingId, setResettingId] = useState<number | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const userSubs = allSubmissions?.filter(s => s.userId === userId) || [];
   const approved = userSubs.filter(s => s.status === "approved");
@@ -45,12 +51,35 @@ export default function AdminUserHistory({ userId, userName, onBack }: Props) {
     { id: "transactions" as Tab, label: "Transactions", count: transactions.length, color: "text-blue-400", icon: Banknote },
   ];
 
+  const handleReset = async (submissionId: number) => {
+    setResettingId(submissionId);
+    const token = localStorage.getItem("boost_earn_token");
+    const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+    try {
+      const res = await fetch(`${base}/api/submissions/${submissionId}/reset`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        toast({ title: "✅ Réinitialisée", description: "La tâche repasse en attente" });
+        refetch();
+        queryClient.invalidateQueries({ queryKey: ["/api/submissions"] });
+      } else {
+        toast({ title: "Erreur", description: "Échec de la réinitialisation", variant: "destructive" });
+      }
+    } catch (err) {
+      toast({ title: "Erreur", description: "Erreur de connexion", variant: "destructive" });
+    } finally {
+      setResettingId(null);
+    }
+  };
+
   const renderSubmissions = (subs: typeof userSubs) => {
     if (!subs.length) return (
       <div className="text-center py-10 text-muted-foreground">Aucune soumission dans cette catégorie.</div>
     );
     return subs.map(sub => (
-      <div key={sub.id} className="bg-secondary/40 rounded-2xl p-4 space-y-2">
+      <div key={sub.id} className="bg-secondary/40 rounded-2xl p-4 space-y-3">
         <div className="flex justify-between items-start">
           <div>
             <p className="font-semibold">{sub.taskName || "Tâche supprimée"}</p>
@@ -71,6 +100,18 @@ export default function AdminUserHistory({ userId, userName, onBack }: Props) {
             <img key={i} src={url} alt="Capture" className="w-20 h-28 object-cover rounded-xl border border-white/10 shrink-0" />
           ))}
         </div>
+        {(activeTab === "approved" || activeTab === "rejected") && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
+            onClick={() => handleReset(sub.id)}
+            disabled={resettingId === sub.id}
+          >
+            <RotateCcw className="w-3 h-3 mr-1.5" />
+            {resettingId === sub.id ? "Réinit..." : "Reset"}
+          </Button>
+        )}
       </div>
     ));
   };

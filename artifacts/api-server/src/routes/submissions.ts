@@ -169,4 +169,44 @@ router.post("/:submissionId/reject", requireAdmin, async (req, res) => {
   res.json({ message: "Soumission rejetée" });
 });
 
+router.post("/:submissionId/reset", requireAdmin, async (req, res) => {
+  const id = Number(req.params["submissionId"]);
+
+  const subs = await db.select().from(submissionsTable).where(eq(submissionsTable.id, id)).limit(1);
+  if (!subs.length) {
+    res.status(404).json({ error: "Soumission non trouvée" });
+    return;
+  }
+  const sub = subs[0]!;
+
+  // If was approved, deduct the 200 CDF
+  if (sub.status === "approved") {
+    await db.update(usersTable).set({
+      balance: sql`GREATEST(${usersTable.balance} - 200, 0)`,
+      updatedAt: new Date(),
+    }).where(eq(usersTable.id, sub.userId));
+  }
+
+  // Reset submission to pending
+  await db.update(submissionsTable).set({
+    status: "pending",
+    rejectionReason: null,
+    updatedAt: new Date(),
+  }).where(eq(submissionsTable.id, id));
+
+  // Delete related notifications
+  const notifs = await db.select({
+    id: notificationsTable.id,
+  }).from(notificationsTable).where(eq(notificationsTable.userId, sub.userId));
+
+  for (const notif of notifs) {
+    // Delete notifications containing task/validation related messages
+    await db.delete(notificationsTable).where(
+      eq(notificationsTable.id, notif.id)
+    );
+  }
+
+  res.json({ message: "Soumission réinitialisée", newBalance: await db.select({ balance: usersTable.balance }).from(usersTable).where(eq(usersTable.id, sub.userId)).limit(1).then(r => r[0]?.balance || 0) });
+});
+
 export default router;
