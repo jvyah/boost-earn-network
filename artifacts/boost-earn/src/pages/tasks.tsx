@@ -34,7 +34,7 @@ export default function Tasks() {
         </div>
         <div>
           <h2 className="text-2xl font-display font-bold">Mes Tâches</h2>
-          <p className="text-sm text-muted-foreground">Complétez pour gagner 200 CDF</p>
+          <p className="text-sm text-muted-foreground">Complétez pour gagner 250 CDF</p>
         </div>
       </div>
 
@@ -102,7 +102,7 @@ export default function Tasks() {
                   {sub.status === "approved" && (
                     <div className="flex items-center gap-1.5 mt-1">
                       <CheckCircle className="w-3.5 h-3.5 text-green-400" />
-                      <p className="text-xs text-green-400 font-semibold">+200 CDF crédités à votre solde</p>
+                      <p className="text-xs text-green-400 font-semibold">+250 CDF crédités à votre solde</p>
                     </div>
                   )}
                   {sub.status === "rejected" && (sub as any).rejectionReason && (

@@ -15,20 +15,8 @@ export function TaskCard({ task }: { task: Task }) {
   const { toast } = useToast();
 
   const handleOpenLink = () => {
-    const platform = task.platform?.toLowerCase();
-    
-    // Facebook: Use native protocol for better app detection
-    if (platform === 'facebook' && task.link.includes('facebook.com')) {
-      const fbUrl = task.link.replace(/^https?:\/\/(www\.)?facebook\.com/, '');
-      window.open(`fb://facewebmodal/f?href=${encodeURIComponent(task.link)}`, '_blank');
-      // Fallback to web version after short delay
-      setTimeout(() => {
-        if (document.hidden === false) window.open(task.link, '_blank', 'noopener,noreferrer');
-      }, 1500);
-    } else {
-      // Standard web open for all other platforms
-      window.open(task.link, '_blank', 'noopener,noreferrer');
-    }
+    // Use standard window.open for all platforms - let mobile OS handle deep linking to correct content
+    window.open(task.link, '_blank');
   };
 
   const handleSubmit = () => {
@@ -69,7 +57,7 @@ export function TaskCard({ task }: { task: Task }) {
         
         <div className="text-right">
           <div className="inline-block bg-success/20 text-success text-xs font-bold px-2 py-1 rounded-md mb-1">
-            +200 CDF
+            +250 CDF
           </div>
           <div className="text-[10px] text-muted-foreground block">
             Reste: {formatDistanceToNow(expiresDate, { locale: fr })}

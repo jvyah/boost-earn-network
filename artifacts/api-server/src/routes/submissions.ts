@@ -123,13 +123,13 @@ router.post("/:submissionId/approve", requireAdmin, async (req, res) => {
 
   await db.update(submissionsTable).set({ status: "approved", updatedAt: new Date() }).where(eq(submissionsTable.id, id));
   await db.update(usersTable).set({
-    balance: sql`${usersTable.balance} + 200`,
+    balance: sql`${usersTable.balance} + 250`,
     updatedAt: new Date(),
   }).where(eq(usersTable.id, sub.userId));
 
   await db.insert(notificationsTable).values({
     userId: sub.userId,
-    message: "Félicitations ! Votre tâche a été validée. +200 CDF ajoutés.",
+    message: "Félicitations ! Votre tâche a été validée. +250 CDF ajoutés à votre solde.",
     type: "success",
     isRead: false,
   });
@@ -179,10 +179,10 @@ router.post("/:submissionId/reset", requireAdmin, async (req, res) => {
   }
   const sub = subs[0]!;
 
-  // If was approved, deduct the 200 CDF
+  // If was approved, deduct the 250 CDF
   if (sub.status === "approved") {
     await db.update(usersTable).set({
-      balance: sql`GREATEST(${usersTable.balance} - 200, 0)`,
+      balance: sql`GREATEST(${usersTable.balance} - 250, 0)`,
       updatedAt: new Date(),
     }).where(eq(usersTable.id, sub.userId));
   }

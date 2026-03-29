@@ -27,7 +27,7 @@ export default function Home() {
       <div className="glass-panel p-6 rounded-3xl relative overflow-hidden">
         <div className="absolute -right-10 -top-10 w-40 h-40 bg-primary/20 blur-3xl rounded-full pointer-events-none" />
         <h2 className="text-2xl font-display font-bold mb-2">Bienvenue sur Boost&Earn</h2>
-        <p className="text-muted-foreground text-sm">Gagnez 200 CDF par tâche validée !</p>
+        <p className="text-muted-foreground text-sm">Gagnez 250 CDF par tâche validée !</p>
       </div>
 
       <div>
