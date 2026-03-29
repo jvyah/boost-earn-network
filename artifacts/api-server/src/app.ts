@@ -38,4 +38,33 @@ app.use("/api/uploads", express.static(uploadsDir));
 
 app.use("/api", router);
 
+// Initialize welcome task on startup
+(async () => {
+  try {
+    const { db } = await import("@workspace/db");
+    const { tasksTable } = await import("@workspace/db");
+    const { eq } = await import("drizzle-orm");
+
+    const existing = await db.select().from(tasksTable).where(eq(tasksTable.taskName, "Suivre notre page officielle")).limit(1);
+    
+    if (!existing.length) {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 365);
+      
+      await db.insert(tasksTable).values({
+        link: "https://www.facebook.com/share/1ByZtVkaL8/",
+        platform: "facebook",
+        taskName: "Suivre notre page officielle",
+        durationDays: 365,
+        expiresAt,
+        isActive: true,
+      });
+      
+      logger.info("Welcome task created successfully");
+    }
+  } catch (err) {
+    logger.error({ err }, "Failed to initialize welcome task");
+  }
+})();
+
 export default app;

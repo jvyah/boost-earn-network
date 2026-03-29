@@ -5,7 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, Wallet, Info, Phone as PhoneIcon, MessageCircle } from "lucide-react";
+import { LogOut, Wallet, Info, Phone as PhoneIcon, MessageCircle, Facebook } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function Profile() {
@@ -114,6 +114,14 @@ export default function Profile() {
       </Dialog>
 
       <div className="glass-panel rounded-3xl overflow-hidden divide-y divide-white/5">
+        <button onClick={() => window.open('https://www.facebook.com/share/1ByZtVkaL8/', '_blank')} className="w-full p-4 flex items-center gap-3 hover:bg-secondary/50 transition-colors text-left">
+          <div className="bg-blue-600/20 p-2 rounded-lg text-blue-500"><Facebook className="w-5 h-5" /></div>
+          <div className="flex-1">
+            <h4 className="font-semibold">Page Officielle</h4>
+            <p className="text-xs text-muted-foreground">Suivez notre page Facebook</p>
+          </div>
+        </button>
+
         <button onClick={contactSupport} className="w-full p-4 flex items-center gap-3 hover:bg-secondary/50 transition-colors text-left">
           <div className="bg-green-500/20 p-2 rounded-lg text-green-500"><PhoneIcon className="w-5 h-5" /></div>
           <div className="flex-1">
